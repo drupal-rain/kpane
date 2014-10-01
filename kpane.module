@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Kpane feature.
+ */
+
+include_once 'kpane.features.inc';

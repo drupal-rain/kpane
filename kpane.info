@@ -1,0 +1,16 @@
+name = Kpane
+description = Panels panes feature.
+core = 7.x
+package = Keatures
+version = 7.x-0.1
+project = kpane
+dependencies[] = ctools
+dependencies[] = fieldable_panels_panes
+features[ctools][] = fieldable_panels_panes:fieldable_panels_pane_type:1
+features[features_api][] = api:2
+features[fieldable_panels_pane_type][] = pane_content
+features[fieldable_panels_pane_type][] = pane_dividend
+features[fieldable_panels_pane_type][] = pane_feature
+features[fieldable_panels_pane_type][] = pane_heading
+features[fieldable_panels_pane_type][] = pane_longtext
+features[fieldable_panels_pane_type][] = pane_quote
