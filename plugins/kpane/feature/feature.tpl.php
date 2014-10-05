@@ -1,4 +1,4 @@
 <div class="<?php print $classes; ?>"<?php print $attributes; ?>>
-  <?php print render($title_suffix); ?>
+  <h2><?php print $title; ?></h2>
   <?php print $fields; ?>
 </div>

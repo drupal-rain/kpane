@@ -3,37 +3,27 @@
 $plugin = array();
 
 function kpane_kpane_heading_bundle_info() {
-  return array(
-    'label' => t('Heading'),
-    'pane category' => t('Kpane'),
-    'pane top level' => FALSE, // set to true to make this show as a top level icon
-    //'pane icon' => '/path/to/custom/icon/for/this/pane.png',
-    'admin' => array(
-      'path' => 'admin/structure/fieldable-panels-panes/manage/%fieldable_panels_pane_type',
-      'bundle argument' => 4,
-      'real path' => 'admin/structure/fieldable-panels-panes/manage/heading',
-      'access arguments' => array('administer fieldable panels panes'),
-    ),
-  );
+  return _kpane_kpane_bundle_info('heading');
 }
 
 function kpane_kpane_heading_theme_registry($existing, $type, $theme, $path) {
-  $plugin = kpane_kpane_get_plugins('heading');
-  $registry = array();
-  $registry['fieldable_panels_pane__heading'] = array (
-    'base hook' => 'fieldable_panels_pane',
-    'render element' => 'elements',
-    'path' => $plugin['path'],
-    'template' => 'heading',
+  return _kpane_kpane_theme_registry('heading');
+}
+
+function kpane_kpane_heading_template_preprocess(&$vars, $entity) {
+  $vars['tag'] = $entity->settings['heading']['tag'];
+}
+
+function kpane_kpane_heading_settings_form($form, $form_state) {
+  $entity = $form_state['entity'];
+  $settings_form = array();
+  $tags = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6');
+  $settings_form['tag'] = array(
+    '#type' => 'select',
+    '#title' => t('Heading Tag'),
+    '#options' => array_combine($tags, $tags),
+    '#default_value' => isset($entity->settings['heading']['tag']) ? $entity->settings['heading']['tag'] : 'h2',
   );
 
-  return $registry;
-}
-
-function kpane_kpane_heading_template_preprocess(&$vars) {
-
-}
-
-function kpane_kpane_heading_settings_form(&$form, &$form_state) {
-
+  return $settings_form;
 }

@@ -56,6 +56,43 @@ function kpane_kpane_get_function($id, $callback) {
   return $function;
 }
 
+// -----------------------------------------------------------------------------
+// Helper Functions
+
+/**
+ * Helper function for plugin.
+ */
+function _kpane_kpane_bundle_info($id) {
+  return array(
+    'label' => ucfirst($id),
+    'pane category' => t('Kpane'),
+    'pane top level' => FALSE, // set to true to make this show as a top level icon
+    //'pane icon' => '/path/to/custom/icon/for/this/pane.png',
+    'admin' => array(
+      'path' => 'admin/structure/fieldable-panels-panes/manage/%fieldable_panels_pane_type',
+      'bundle argument' => 4,
+      'real path' => 'admin/structure/fieldable-panels-panes/manage/' . $id,
+      'access arguments' => array('administer fieldable panels panes'),
+    ),
+  );
+}
+
+/**
+ * Helper function for plugin.
+ */
+function _kpane_kpane_theme_registry($id) {
+  $plugin = kpane_kpane_get_plugins($id);
+  $registry = array();
+  $registry['fieldable_panels_pane__' . $id] = array (
+    'base hook' => 'fieldable_panels_pane',
+    'render element' => 'elements',
+    'path' => $plugin['path'],
+    'template' => $id,
+  );
+
+  return $registry;
+}
+
 // =============================================================================
 //
 
@@ -66,7 +103,9 @@ function kpane_entity_info_alter(&$entity_info) {
   $plugins = kpane_kpane_get_plugins();
   foreach ($plugins as $id => $plugin) {
     $callback = kpane_kpane_get_function($id, 'bundle info');
-    $entity_info['fieldable_panels_pane']['bundles'][$id] = $callback();
+    if ($callback) {
+      $entity_info['fieldable_panels_pane']['bundles'][$id] = $callback();
+    }
   }
 }
 
@@ -82,6 +121,7 @@ function kpane_theme($existing, $type, $theme, $path) {
   );
 
   // Give registry in order to provide templates in module level.
+  /*
   $panes = array('pane_heading', 'pane_dividend', 'pane_feature');
   foreach ($panes as $pane) {
     $registry['fieldable_panels_pane__' . $pane] = array (
@@ -91,11 +131,17 @@ function kpane_theme($existing, $type, $theme, $path) {
       'template' => 'fieldable-panels-pane--' . str_replace('_', '-', $pane),
     );
   }
+  */
 
+  // Plugins Theme Registry
+  // Allow to add more than on item to the registry.
+  // Then in template preprocess, it could use settings information to add theme hook suggestion.
   $plugins = kpane_kpane_get_plugins();
   foreach ($plugins as $id => $plugin) {
     $callback = kpane_kpane_get_function($id, 'theme registry');
-    $registry += $callback($existing, $type, $theme, $path);
+    if ($callback) {
+      $registry += $callback($existing, $type, $theme, $path);
+    }
   }
 
   return $registry;
@@ -119,20 +165,21 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
   //dsm($vars);
   $entity = $vars['elements']['#fieldable_panels_pane'];
   // CSS Classes
-  // Settings: Use default CSS classes.
-  if (!$entity->settings['pane_classes_default']) {
+  // Settings: Use entity CSS class.
+  if (!$entity->settings['css']['entity_class']) {
     foreach ($vars['classes_array'] as $key => $css_class) {
       if ($css_class == 'fieldable-panels-pane') {
         unset($vars['classes_array'][$key]);
       }
     }
   }
-  else {
+  // Settings: Use bundle CSS class.
+  if ($entity->settings['css']['bundle_class']) {
     $vars['classes_array'][] = $entity->bundle;
   }
   // Settings: Add CSS classes.
-  if (!empty($entity->settings['pane_classes_to_add'])) {
-    $vars['classes_array'][] = check_plain($entity->settings['pane_classes_to_add']);
+  if (!empty($entity->settings['css']['classes'])) {
+    $vars['classes_array'][] = check_plain($entity->settings['css']['classes']);
   }
 
   // Title
@@ -157,24 +204,67 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
     //dsm($vars);
   }
 
+  // Plugin Template Preprocess
+  $callback = kpane_kpane_get_function($entity->bundle, 'template preprocess');
+  if ($callback) {
+    $callback($vars, $entity);
+  }
+
 }
 
+/**
+ *  Implements hook_process_HOOK().
+ */
 function kpane_process_fieldable_panels_pane(&$vars) {
   //dsm($vars);
+  $entity = $vars['elements']['#fieldable_panels_pane'];
+  // Plugin Template Process
+  $callback = kpane_kpane_get_function($entity->bundle, 'template preprocess');
+  if ($callback) {
+    $callback($vars, $entity);
+  }
 }
 
+/**
+ * Implements hook_fieldable_panels_panes_entity_settings_form_alter().
+ */
 function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_state) {
   $entity = $form_state['entity'];
-  $form['settings']['pane_classes_default'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Use default CSS classes'),
-    '#default_value' => $entity->settings['pane_classes_default'],
-  );
-  $form['settings']['pane_classes_to_add'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Add CSS classes'),
-    '#default_value' => $entity->settings['pane_classes_to_add'],
-  );
   // No revision by default.
   $form['revision']['revision']['#default_value'] = FALSE;
+  // Global Settings
+  // CSS
+  $form['settings']['css'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('CSS'),
+    '#collapsible' => TRUE,
+  );
+  $form['settings']['css']['entity_class'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use entity CSS class'),
+    '#default_value' => $entity->settings['css']['entity_class'],
+  );
+  $form['settings']['css']['bundle_class'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use bundle CSS class'),
+    '#default_value' => isset($entity->settings['css']['bundle_class']) ? $entity->settings['css']['bundle_class'] : TRUE,
+  );
+  $form['settings']['css']['classes'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Add CSS classes'),
+    '#default_value' => $entity->settings['css']['classes'],
+  );
+
+  // Plugin Settings
+  $id = $entity->bundle;
+  $callback = kpane_kpane_get_function($id, 'settings form');
+  if ($callback) {
+    $form['settings'][$id] = array(
+      '#type' => 'fieldset',
+      '#title' => t('@id Settings', array('@id' => $id)),
+      '#collapsible' => TRUE,
+    );
+    $form['settings'][$id] += $callback($form, $form_state);
+  }
+
 }
