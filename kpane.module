@@ -27,6 +27,9 @@ function kpane_ctools_plugin_directory($owner, $plugin_type) {
   if ($owner == 'kpane') {
     return 'plugins/' . $plugin_type;
   }
+  if ($owner == 'panels') {
+    return 'panels/' . $plugin_type;
+  }
 }
 
 /**
@@ -264,7 +267,13 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
       '#title' => t('@id Settings', array('@id' => $id)),
       '#collapsible' => TRUE,
     );
-    $form['settings'][$id] += $callback($form, $form_state);
+    $form['settings'][$id] += $callback($form, $form_state, $entity);
   }
 
+}
+
+// Helper function to simplify default value setting in array.
+function kpane_settings_default_value($entity, $param, $default_value) {
+  $bundle = $entity->bundle;
+  return isset($entity->settings[$bundle][$param]) ? $entity->settings[$bundle][$param] : $default_value;
 }
