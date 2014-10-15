@@ -1,6 +1,8 @@
 <?php
 
-$plugin = array();
+$plugin = array(
+  'css' => 'feature.css',
+);
 
 function kpane_kpane_feature_bundle_info() {
   return _kpane_kpane_bundle_info('feature');
@@ -8,4 +10,99 @@ function kpane_kpane_feature_bundle_info() {
 
 function kpane_kpane_feature_theme_registry($existing, $type, $theme, $path) {
   return _kpane_kpane_theme_registry('feature');
+}
+
+// Prepare variables for template:
+// * $intro
+// * $picture
+// * $items
+function kpane_kpane_feature_template_preprocess(&$vars, $entity) {
+  if ($entity->settings['feature']['narrow']) {
+    $vars['classes_array'][] = 'narrow';
+  }
+  $vars['intro'] = field_view_value(KPANE_ENTITY, $entity, 'kpane_feature_intro',
+    $vars['kpane_feature_intro'][0], array(
+      'label' => 'hidden',
+    )
+  );
+  $vars['picture'] = kpane_picture_template_variable($entity, 'kpane_feature_image', 'picture');
+  $items = kpane_kpane_feature_items($vars['kpane_feature_items']);
+  $vars['items_first'] = $items['first'];
+  $vars['items_second'] = $items['second'];
+}
+
+function kpane_kpane_feature_settings_form($form_orig, &$form_state, $entity) {
+  $form = array();
+
+  // Narrow Mode
+  $form['narrow'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Narrow Mode'),
+    '#description' => t('Better display style for narrow column.'),
+    '#default_value' => kpane_settings_default_value($entity, 'narrow', FALSE),
+  );
+
+  // Picture Settings
+  $form['picture'] = kpane_picture_settings_form($entity, 'kpane_feature_image', 'picture');
+
+  return $form;
+}
+
+function kpane_kpane_feature_reset() {
+  $entity_type = KPANE_ENTITY;
+  $bundle = 'feature';
+  ctools_include('text', 'kfield');
+  kfield_text_add_longtext_default($entity_type, $bundle, 'kpane_feature_intro', t('Intro'));
+  ctools_include('image', 'kfield');
+  kfield_image_add_image_default($entity_type, $bundle, 'kpane_feature_image', t('Image'));
+  kfield_add_field_default('double_field', $entity_type, $bundle, 'kpane_feature_items', t('Items'));
+  $items_base = array(
+    'settings' => array(
+      'second' => array(
+        'type' => 'text',
+      ),
+    ),
+    'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+  );
+  kfield_mod_field_base('kpane_feature_items', $items_base);
+  $items_instance = array(
+    'widget' => array(
+      'type' => 'textfield_&_textarea',
+      'module' => 'double_field',
+    ),
+  );
+  kfield_mod_field_instance($entity_type, $bundle, 'kpane_feature_items', $items_instance);
+}
+
+// =============================================================================
+//
+
+// Theme items.
+function kpane_kpane_feature_items($items) {
+  $output = array(
+    'first' => '',
+    'second' => '',
+  );
+
+  $amount = count($items);
+  $amount_first = ceil($amount / 2.0);
+
+  for ($i = 0; $i < $amount_first; $i++) {
+    $output['first'] .= kpane_kpane_feature_item($items[$i]);
+  }
+  for ($i = $amount_first; $i < $amount; $i++) {
+    $output['second'] .= kpane_kpane_feature_item($items[$i]);
+  }
+
+  return $output;
+}
+
+// Theme single item.
+function kpane_kpane_feature_item($item) {
+  $output = '<div class="feature-item">';
+  $output .= "<h3>{$item['first']}</h3>";
+  $output .= "<div>{$item['second']}</div>";
+  $output .= '</div>';
+
+  return $output;
 }
