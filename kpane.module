@@ -126,7 +126,7 @@ function kpane_menu() {
     'title' => 'Reset',
     'description' => 'Reset the kpane.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('kpane_kpane_reset_form', 4),
+    'page arguments' => array('kpane_plugin_reset_form', 4),
     'access arguments' => array('administer fieldable panels panes'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 100,
@@ -246,7 +246,7 @@ function kpane_process_fieldable_panels_pane(&$vars) {
   //dsm($vars);
   $entity = $vars['elements']['#fieldable_panels_pane'];
   // Plugin Template Process
-  $callback = kpane_plugin_get_function($entity->bundle, 'template preprocess');
+  $callback = kpane_plugin_get_function($entity->bundle, 'template process');
   if ($callback) {
     $callback($vars, $entity);
   }
@@ -300,9 +300,9 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
 // Callbacks, Helpers, Utility
 
 /**
- *
+ * For menu: 'admin/structure/fieldable-panels-panes/manage/%/reset'.
  */
-function kpane_kpane_reset_form($form, &$form_state, $kpane_bundle) {
+function kpane_plugin_reset_form($form, &$form_state, $kpane_bundle) {
   $question = t('Are you sure to reset he @kpane_bundle.', array('@kpane_bundle' => $kpane_bundle));
   $path = 'admin/structure/fieldable-panels-panes/manage/' . $kpane_bundle;
   $form_state['kpane_bundle'] = $kpane_bundle;
@@ -310,7 +310,7 @@ function kpane_kpane_reset_form($form, &$form_state, $kpane_bundle) {
   return confirm_form($form, $question, $path);
 }
 
-function kpane_kpane_reset_form_submit($form, &$form_state) {
+function kpane_plugin_reset_form_submit($form, &$form_state) {
   $kpane_bundle = $form_state['kpane_bundle'];
   if ($form_state['values']['confirm']) {
     $callback = kpane_plugin_get_function($kpane_bundle, 'reset');
@@ -351,7 +351,7 @@ function kpane_picture_settings_form($entity, $field_name, $id) {
   $instance = field_info_instance(KPANE_ENTITY, $field_name, $bundle);
   $settings = kpane_settings_default_value($entity, $id, array(
     'link' => FALSE,
-    'url' => '',
+    'image_link_url' => '',
   ));
   $settings += field_info_formatter_settings('picture');
   $form[$id] = array(
@@ -360,18 +360,14 @@ function kpane_picture_settings_form($entity, $field_name, $id) {
     '#collapsible' => TRUE,
   );
   $form[$id] += picture_field_formatter_settings_picture_form($base, $instance, $settings);
-  $form[$id]['link'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Set as Link'),
-    '#default_value' => $settings['link'],
-  );
-  $form[$id]['url'] = array(
+  $form[$id]['image_link']['#options']['custom'] = t('Custom URL');
+  $form[$id]['image_link_url'] = array(
     '#type' => 'textfield',
     '#title' => t('URL'),
-    '#default_value' => $settings['url'],
+    '#default_value' => $settings['image_link_url'],
     '#states' => array(
       'visible' => array(
-        ':input[name="' . "settings[$bundle][$id][link]" . '"]' => array('checked' => TRUE),
+        ':input[name="' . "settings[$bundle][$id][image_link]" . '"]' => array('value' => 'custom'),
       ),
     ),
   );
@@ -391,12 +387,12 @@ function kpane_picture_template_variable($entity, $field_name, $id) {
   );
   $picture_html = render($picture);
   $output = $picture_html;
-  if ($settings['link']) {
+  if ($settings['image_link'] == 'custom' && !empty($settings['image_link_url'])) {
     $options = array(
       'attributes' => array(),
       'html' => TRUE,
     );
-    $output = l($picture_html, $settings['url'], $options);
+    $output = l($picture_html, $settings['image_link_url'], $options);
   }
 
   return $output;

@@ -120,6 +120,7 @@ function kpane_kpane_feature_items($items) {
 }
 
 // Theme single item.
+// @todo Try set each item with bootstrap grid and let the browser sort them.
 function kpane_kpane_feature_item($item) {
   $output = '<div class="feature-item">';
   $output .= "<h3>{$item['first']}</h3>";

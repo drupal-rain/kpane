@@ -1,4 +1,4 @@
-<div class="<?php print $classes; ?> row vertical-align"<?php print $attributes; ?>>
+<div class="<?php print $classes; ?> row vertical-align" <?php print $attributes; ?>>
   <div class="feature-picture col-md-<?php print kalatheme_grid_size(KALATHEME_GRID_THIRD); ?>">
     <?php print render($picture); ?>
   </div>
