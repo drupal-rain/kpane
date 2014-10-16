@@ -3,11 +3,11 @@
 $plugin = array();
 
 function kpane_kpane_heading_bundle_info() {
-  return _kpane_kpane_bundle_info('heading');
+  return _kpane_plugin_bundle_info('heading');
 }
 
 function kpane_kpane_heading_theme_registry($existing, $type, $theme, $path) {
-  return _kpane_kpane_theme_registry('heading');
+  return _kpane_plugin_theme_registry('heading');
 }
 
 function kpane_kpane_heading_template_preprocess(&$vars, $entity) {

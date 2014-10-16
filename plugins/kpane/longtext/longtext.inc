@@ -3,11 +3,11 @@
 $plugin = array();
 
 function kpane_kpane_longtext_bundle_info() {
-  return _kpane_kpane_bundle_info('longtext');
+  return _kpane_plugin_bundle_info('longtext');
 }
 
 function kpane_kpane_longtext_theme_registry($existing, $type, $theme, $path) {
-  return _kpane_kpane_theme_registry('longtext');
+  return _kpane_plugin_theme_registry('longtext');
 }
 
 // @todo Not just initiate function.
@@ -19,7 +19,5 @@ function kpane_kpane_longtext_reset() {
   $instance['settings']['text_processing'] = TRUE;
   $instance['display']['default']['label'] = 'hidden';
   field_update_instance($instance);
-  $field_bundle_settings = field_bundle_settings('fieldable_panels_pane', 'longtext');
-  $field_bundle_settings['extra_fields']['display']['title']['default']['visible'] = FALSE;
-  field_bundle_settings('fieldable_panels_pane', 'longtext', $field_bundle_settings);
+  kpane_hide_title('longtext');
 }

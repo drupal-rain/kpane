@@ -83,7 +83,7 @@ function kpane_plugin_attach($id) {
 /**
  * Helper function for plugin.
  */
-function _kpane_kpane_bundle_info($id) {
+function _kpane_plugin_bundle_info($id) {
   return array(
     'label' => ucfirst($id),
     'pane category' => t('Kpane'),
@@ -101,7 +101,7 @@ function _kpane_kpane_bundle_info($id) {
 /**
  * Helper function for plugin.
  */
-function _kpane_kpane_theme_registry($id) {
+function _kpane_plugin_theme_registry($id) {
   $plugin = kpane_plugin_get_plugins($id);
   $registry = array();
   $registry['fieldable_panels_pane__' . $id] = array (
@@ -334,6 +334,13 @@ function kpane_settings_default_value($entity, $param, $default_value) {
   return isset($entity->settings[$bundle][$param]) ? $entity->settings[$bundle][$param] : $default_value;
 }
 
+// Hide title in display.
+function kpane_hide_title($bundle, $view_mode = 'default') {
+  $field_bundle_settings = field_bundle_settings(KPANE_ENTITY, $bundle);
+  $field_bundle_settings['extra_fields']['display']['title'][$view_mode]['visible'] = FALSE;
+  field_bundle_settings(KPANE_ENTITY, $bundle, $field_bundle_settings);
+}
+
 // Common setting form for picture field.
 // Suitable for multiple picture fields in one entity.
 function kpane_picture_settings_form($entity, $field_name, $id) {
@@ -342,7 +349,10 @@ function kpane_picture_settings_form($entity, $field_name, $id) {
   $bundle = $entity->bundle;
   $base = field_info_field($field_name);
   $instance = field_info_instance(KPANE_ENTITY, $field_name, $bundle);
-  $settings = kpane_settings_default_value($entity, $id, array());
+  $settings = kpane_settings_default_value($entity, $id, array(
+    'link' => FALSE,
+    'url' => '',
+  ));
   $settings += field_info_formatter_settings('picture');
   $form[$id] = array(
     '#type' => 'fieldset',
@@ -350,6 +360,21 @@ function kpane_picture_settings_form($entity, $field_name, $id) {
     '#collapsible' => TRUE,
   );
   $form[$id] += picture_field_formatter_settings_picture_form($base, $instance, $settings);
+  $form[$id]['link'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Set as Link'),
+    '#default_value' => $settings['link'],
+  );
+  $form[$id]['url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('URL'),
+    '#default_value' => $settings['url'],
+    '#states' => array(
+      'visible' => array(
+        ':input[name="' . "settings[$bundle][$id][link]" . '"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
 
   return $form[$id];
 }
@@ -357,13 +382,22 @@ function kpane_picture_settings_form($entity, $field_name, $id) {
 // Common display for image in picture format.
 function kpane_picture_template_variable($entity, $field_name, $id) {
   $settings = $entity->settings[$entity->bundle][$id] + field_info_formatter_settings('picture');
-
-  return field_view_field(KPANE_ENTITY, $entity,
-    $field_name,
+  $picture = field_view_value(KPANE_ENTITY, $entity, $field_name, $entity->{$field_name}[$entity->language][0],
     array(
       'label' => 'hidden',
       'type' => 'picture',
       'settings' => $settings,
     )
   );
+  $picture_html = render($picture);
+  $output = $picture_html;
+  if ($settings['link']) {
+    $options = array(
+      'attributes' => array(),
+      'html' => TRUE,
+    );
+    $output = l($picture_html, $settings['url'], $options);
+  }
+
+  return $output;
 }

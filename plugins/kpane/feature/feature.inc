@@ -5,11 +5,21 @@ $plugin = array(
 );
 
 function kpane_kpane_feature_bundle_info() {
-  return _kpane_kpane_bundle_info('feature');
+  return _kpane_plugin_bundle_info('feature');
 }
 
 function kpane_kpane_feature_theme_registry($existing, $type, $theme, $path) {
-  return _kpane_kpane_theme_registry('feature');
+  $registry = _kpane_plugin_theme_registry('feature');
+
+  $plugin = kpane_plugin_get_plugins('feature');
+  $registry['fieldable_panels_pane__feature__right'] = array (
+    'base hook' => 'fieldable_panels_pane',
+    'render element' => 'elements',
+    'path' => $plugin['path'],
+    'template' => 'feature--right',
+  );
+
+  return $registry;
 }
 
 // Prepare variables for template:
@@ -19,6 +29,10 @@ function kpane_kpane_feature_theme_registry($existing, $type, $theme, $path) {
 function kpane_kpane_feature_template_preprocess(&$vars, $entity) {
   if ($entity->settings['feature']['narrow']) {
     $vars['classes_array'][] = 'narrow';
+  }
+  // Display picture on the right.
+  if ($entity->settings['feature']['right']) {
+    $vars['theme_hook_suggestions'][] = 'fieldable_panels_pane__feature__right';
   }
   $vars['intro'] = field_view_value(KPANE_ENTITY, $entity, 'kpane_feature_intro',
     $vars['kpane_feature_intro'][0], array(
@@ -42,6 +56,14 @@ function kpane_kpane_feature_settings_form($form_orig, &$form_state, $entity) {
     '#default_value' => kpane_settings_default_value($entity, 'narrow', FALSE),
   );
 
+  // Display Picture on the Right
+  $form['right'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Picture on the Right'),
+    '#description' => t('Display picture on the right (Default: on the left).'),
+    '#default_value' => kpane_settings_default_value($entity, 'right', FALSE),
+  );
+
   // Picture Settings
   $form['picture'] = kpane_picture_settings_form($entity, 'kpane_feature_image', 'picture');
 
@@ -54,7 +76,7 @@ function kpane_kpane_feature_reset() {
   ctools_include('text', 'kfield');
   kfield_text_add_longtext_default($entity_type, $bundle, 'kpane_feature_intro', t('Intro'));
   ctools_include('image', 'kfield');
-  kfield_image_add_image_default($entity_type, $bundle, 'kpane_feature_image', t('Image'));
+  kfield_image_add_image_default($entity_type, $bundle, 'kpane_feature_image', t('Picture'));
   kfield_add_field_default('double_field', $entity_type, $bundle, 'kpane_feature_items', t('Items'));
   $items_base = array(
     'settings' => array(
