@@ -26,26 +26,33 @@ function kpane_kpane_feature_theme_registry($existing, $type, $theme, $path) {
 // * $intro
 // * $picture
 // * $items
-function kpane_kpane_feature_template_preprocess(&$vars, $entity) {
-  if ($entity->settings['feature']['narrow']) {
+function kpane_kpane_feature_template_preprocess(&$vars, $context) {
+  if ($context->settings['feature']['narrow']) {
     $vars['classes_array'][] = 'narrow';
   }
   // Display picture on the right.
-  if ($entity->settings['feature']['right']) {
+  if ($context->settings['feature']['right']) {
     $vars['theme_hook_suggestions'][] = 'fieldable_panels_pane__feature__right';
   }
-  $vars['intro'] = field_view_value(KPANE_ENTITY, $entity, 'kpane_feature_intro',
+  $vars['intro'] = field_view_value(KPANE_ENTITY, $context, 'kpane_feature_intro',
     $vars['kpane_feature_intro'][0], array(
       'label' => 'hidden',
     )
   );
-  $vars['picture'] = kpane_picture_template_variable($entity, 'kpane_feature_image', 'picture');
+  // Image
+  /*
+  kpane_include('picture');
+  $vars['picture'] = kpane_picture_template_variable('picture', $entity, 'kpane_feature_image');
+  */
+  kpane_include('image');
+  $vars['picture'] = kpane_image_prepare_kore_image($vars['kpane_feature_image'][0]['fid'], 'image', $context);
+  // Items
   $items = kpane_kpane_feature_items($vars['kpane_feature_items']);
   $vars['items_first'] = $items['first'];
   $vars['items_second'] = $items['second'];
 }
 
-function kpane_kpane_feature_settings_form($form_orig, &$form_state, $entity) {
+function kpane_kpane_feature_settings_form($form_orig, &$form_state, $context) {
   $form = array();
 
   // Narrow Mode
@@ -53,7 +60,7 @@ function kpane_kpane_feature_settings_form($form_orig, &$form_state, $entity) {
     '#type' => 'checkbox',
     '#title' => t('Narrow Mode'),
     '#description' => t('Better display style for narrow column.'),
-    '#default_value' => kpane_settings_default_value($entity, 'narrow', FALSE),
+    '#default_value' => kpane_settings_default_value($context, 'narrow', FALSE),
   );
 
   // Display Picture on the Right
@@ -61,11 +68,17 @@ function kpane_kpane_feature_settings_form($form_orig, &$form_state, $entity) {
     '#type' => 'checkbox',
     '#title' => t('Picture on the Right'),
     '#description' => t('Display picture on the right (Default: on the left).'),
-    '#default_value' => kpane_settings_default_value($entity, 'right', FALSE),
+    '#default_value' => kpane_settings_default_value($context, 'right', FALSE),
   );
 
+  // Image
   // Picture Settings
-  $form['picture'] = kpane_picture_settings_form($entity, 'kpane_feature_image', 'picture');
+  /*
+  kpane_include('picture');
+  $form['picture'] = kpane_picture_field_settings_form('picture', $context, 'kpane_feature_image');
+  */
+  kpane_include('image');
+  $form['image'] = kpane_image_settings_form('image', $context);
 
   return $form;
 }
@@ -97,7 +110,7 @@ function kpane_kpane_feature_reset() {
 }
 
 // =============================================================================
-//
+// Theme Functions
 
 // Theme items.
 function kpane_kpane_feature_items($items) {

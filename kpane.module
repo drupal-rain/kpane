@@ -8,6 +8,13 @@ define('KPANE_ENTITY', 'fieldable_panels_pane');
 
 include_once 'kpane.features.inc';
 
+/**
+ * Wrapper for ctools_include().
+ */
+function kpane_include($file, $dir = 'includes') {
+  ctools_include($file, 'kpane', $dir);
+}
+
 // =============================================================================
 // Plugin
 
@@ -26,7 +33,7 @@ function kpane_ctools_plugin_type() {
  *  Implements hook_ctools_plugin_directory().
  */
 function kpane_ctools_plugin_directory($owner, $plugin_type) {
-  if ($owner == 'kpane') {
+  if (in_array($owner, array('kore', 'kpane'))) {
     return 'plugins/' . $plugin_type;
   }
   if ($owner == 'panels') {
@@ -148,6 +155,9 @@ function kpane_entity_info_alter(&$entity_info) {
   }
 }
 
+// =============================================================================
+// Theme
+
 /**
  * Implements hook_theme().
  */
@@ -222,9 +232,11 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
   }
 
   // Title
-  $vars['title'] = $entity->title;
-  if ($entity->link) {
-    $vars['title'] = l($vars['title'], $entity->path);
+  if ($entity->settings['display']['title']) {
+    $vars['title'] = $entity->title;
+    if ($entity->link) {
+      $vars['title'] = l($vars['title'], $entity->path);
+    }
   }
 
   // Plugin Callback: 'template preprocess'
@@ -259,7 +271,9 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   $entity = $form_state['entity'];
   // No revision by default.
   $form['revision']['revision']['#default_value'] = FALSE;
-  // Global Settings
+
+  // --- Global Settings --- //
+
   // CSS
   $form['settings']['css'] = array(
     '#type' => 'fieldset',
@@ -269,20 +283,32 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   $form['settings']['css']['entity_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use entity CSS class'),
-    '#default_value' => $entity->settings['css']['entity_class'],
+    '#default_value' => kpane_settings_global_default_value($entity, array('css', 'entity_class'), TRUE),
   );
   $form['settings']['css']['bundle_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use bundle CSS class'),
-    '#default_value' => isset($entity->settings['css']['bundle_class']) ? $entity->settings['css']['bundle_class'] : TRUE,
+    '#default_value' => kpane_settings_global_default_value($entity, array('css', 'bundle_class'), TRUE),
   );
   $form['settings']['css']['classes'] = array(
     '#type' => 'textfield',
     '#title' => t('Add CSS classes'),
-    '#default_value' => $entity->settings['css']['classes'],
+    '#default_value' => kpane_settings_global_default_value($entity, array('css', 'classes'), ''),
   );
 
-  // Plugin Settings
+  // Display
+  $form['settings']['display'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Display'),
+    '#collapsible' => TRUE,
+  );
+  $form['settings']['display']['title'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show title'),
+    '#default_value' => kpane_settings_global_default_value($entity, array('display', 'title'), TRUE),
+  );
+
+  // --- Plugin Settings --- //
   $id = $entity->bundle;
   $callback = kpane_plugin_get_function($id, 'settings form');
   if ($callback) {
@@ -329,71 +355,25 @@ function kpane_plugin_reset_form_submit($form, &$form_state) {
 // Helper
 
 // Helper function to simplify default value setting in array.
-function kpane_settings_default_value($entity, $param, $default_value) {
-  $bundle = $entity->bundle;
-  return isset($entity->settings[$bundle][$param]) ? $entity->settings[$bundle][$param] : $default_value;
-}
-
-// Hide title in display.
-function kpane_hide_title($bundle, $view_mode = 'default') {
-  $field_bundle_settings = field_bundle_settings(KPANE_ENTITY, $bundle);
-  $field_bundle_settings['extra_fields']['display']['title'][$view_mode]['visible'] = FALSE;
-  field_bundle_settings(KPANE_ENTITY, $bundle, $field_bundle_settings);
-}
-
-// Common setting form for picture field.
-// Suitable for multiple picture fields in one entity.
-function kpane_picture_settings_form($entity, $field_name, $id) {
-  $form = array();
-
-  $bundle = $entity->bundle;
-  $base = field_info_field($field_name);
-  $instance = field_info_instance(KPANE_ENTITY, $field_name, $bundle);
-  $settings = kpane_settings_default_value($entity, $id, array(
-    'link' => FALSE,
-    'image_link_url' => '',
-  ));
-  $settings += field_info_formatter_settings('picture');
-  $form[$id] = array(
-    '#type' => 'fieldset',
-    '#title' => ucfirst($id),
-    '#collapsible' => TRUE,
-  );
-  $form[$id] += picture_field_formatter_settings_picture_form($base, $instance, $settings);
-  $form[$id]['image_link']['#options']['custom'] = t('Custom URL');
-  $form[$id]['image_link_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('URL'),
-    '#default_value' => $settings['image_link_url'],
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . "settings[$bundle][$id][image_link]" . '"]' => array('value' => 'custom'),
-      ),
-    ),
-  );
-
-  return $form[$id];
-}
-
-// Common display for image in picture format.
-function kpane_picture_template_variable($entity, $field_name, $id) {
-  $settings = $entity->settings[$entity->bundle][$id] + field_info_formatter_settings('picture');
-  $picture = field_view_value(KPANE_ENTITY, $entity, $field_name, $entity->{$field_name}[$entity->language][0],
-    array(
-      'label' => 'hidden',
-      'type' => 'picture',
-      'settings' => $settings,
-    )
-  );
-  $picture_html = render($picture);
-  $output = $picture_html;
-  if ($settings['image_link'] == 'custom' && !empty($settings['image_link_url'])) {
-    $options = array(
-      'attributes' => array(),
-      'html' => TRUE,
-    );
-    $output = l($picture_html, $settings['image_link_url'], $options);
+function kpane_settings_default_value($entity, $param, $default_value, $plugin = TRUE) {
+  if ($plugin) {
+    $var = &$entity->settings[$entity->bundle];
+  }
+  else {
+    $var = &$entity->settings;
+  }
+  if (is_array($param)) {
+    foreach ($param as $child) {
+      $var = &$var[$child];
+    }
+  }
+  else {
+    $var = &$var[$param];
   }
 
-  return $output;
+  return isset($var) ? $var : $default_value;
+}
+
+function kpane_settings_global_default_value($entity, $param, $default_value) {
+  return kpane_settings_default_value($entity, $param, $default_value, FALSE);
 }

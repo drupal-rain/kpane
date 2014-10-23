@@ -19,5 +19,5 @@ function kpane_kpane_longtext_reset() {
   $instance['settings']['text_processing'] = TRUE;
   $instance['display']['default']['label'] = 'hidden';
   field_update_instance($instance);
-  kpane_hide_title('longtext');
+  kpane_title_hide('longtext');
 }

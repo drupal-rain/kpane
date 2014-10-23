@@ -16,6 +16,7 @@ Plugin: Kpane
     - Helper: _kpane_plugin_theme_registry().
 * template preprocess (Optional)
     - Callback: MODULE_PLUGIN-TYPE_PLUGIN_template_preprocess().
+    - Actual hook by other add-on: MODULE_preprocess_fieldable_panels_pane__PLUGIN().
 * template process (Optional)
     - Callback: MODULE_PLUGIN-TYPE_PLUGIN_template_process().
 * settings form (Optional)
@@ -33,6 +34,6 @@ Kpane Types
 * (?)media
 * picture
 * post
+* posts
 * quote
-* (?)story
 * whitespace
