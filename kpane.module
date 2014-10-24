@@ -152,6 +152,9 @@ function kpane_entity_info_alter(&$entity_info) {
     if ($callback) {
       $entity_info['fieldable_panels_pane']['bundles'][$id] = $callback();
     }
+    else {
+      $entity_info['fieldable_panels_pane']['bundles'][$id] = _kpane_plugin_bundle_info($id);
+    }
   }
 }
 
@@ -169,19 +172,6 @@ function kpane_theme($existing, $type, $theme, $path) {
     'template' => 'panels-pane--fieldable-panels-pane',
   );
 
-  // Give registry in order to provide templates in module level.
-  /*
-  $panes = array('pane_heading', 'pane_dividend', 'pane_feature');
-  foreach ($panes as $pane) {
-    $registry['fieldable_panels_pane__' . $pane] = array (
-      'base hook' => 'fieldable_panels_pane',
-      'render element' => 'elements',
-      'path' => drupal_get_path('module', 'kpane') . '/templates',
-      'template' => 'fieldable-panels-pane--' . str_replace('_', '-', $pane),
-    );
-  }
-  */
-
   // Plugins Theme Registry
   // Allow to add more than on item to the registry.
   // Then in template preprocess, it could use settings information to add theme hook suggestion.
@@ -190,6 +180,9 @@ function kpane_theme($existing, $type, $theme, $path) {
     $callback = kpane_plugin_get_function($id, 'theme registry');
     if ($callback) {
       $registry += $callback($existing, $type, $theme, $path);
+    }
+    else {
+      $registry += _kpane_plugin_theme_registry($id);
     }
   }
 

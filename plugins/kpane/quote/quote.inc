@@ -2,10 +2,6 @@
 
 $plugin = array();
 
-function kpane_kpane_quote_bundle_info() {
-  return _kpane_plugin_bundle_info('quote');
-}
-
 function kpane_kpane_quote_theme_registry($existing, $type, $theme, $path) {
   return _kpane_plugin_theme_registry('quote');
 }
