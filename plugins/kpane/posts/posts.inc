@@ -162,12 +162,12 @@ function _kpane_kpane_posts_template_preprocess(&$variables, $vars, $context) {
     if (!$post['access']) continue;
     $entity = $post['entity'];
     // Data
-    $eck_entity_type = entity_type_load('kpost');
-    $formatters = eck_property_behavior_invoke_plugin($eck_entity_type, 'default_formatter', array('entity' => $entity));
+    //$eck_entity_type = entity_type_load('kpost');
+    //$formatters = eck_property_behavior_invoke_plugin($eck_entity_type, 'default_formatter', array('entity' => $entity));
     $item = array(
       'image' => array('path' => $entity->kpost_image[LANGUAGE_NONE][0]['uri'],),
-      'title' => render($formatters['title']),
-      'body' => render($formatters['body']), // check_markup($entity->body, 'html'),
+      'title' => $entity->title,//render($formatters['title']),
+      'body' => $entity->body, // render($formatters['body']), // check_markup($entity->body, 'html'),
     );
     // Image
     if ($context_settings['image']['image_style'] != 'none') {

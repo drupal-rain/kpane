@@ -3,9 +3,9 @@
     <?php print render($picture); ?>
   </div>
   <div class="feature-main col-md-<?php print kalatheme_grid_size(KALATHEME_GRID_THIRD) * 2; ?>">
-    <h2 class="feature-title">
-      <?php print $title; ?>
-    </h2>
+    <?php if ($title): ?>
+      <?php print "<$tag class=\"feature-title\">$title</$tag>"; ?>
+    <?php endif; ?>
     <div class="feature-intro">
       <?php print render($intro); ?>
     </div>

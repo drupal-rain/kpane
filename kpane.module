@@ -117,6 +117,16 @@ function _kpane_plugin_theme_registry($id) {
     'path' => $plugin['path'],
     'template' => $id,
   );
+  if (!empty($plugin['subtypes'])) {
+    foreach ($plugin['subtypes'] as $subtype => $subtype_info) {
+      $registry['fieldable_panels_pane__' . $id . '_' . $subtype] = array (
+        'base hook' => 'fieldable_panels_pane',
+        'render element' => 'elements',
+        'path' => $plugin['path'],
+        'template' => $id . '_' . $subtype,
+      );
+    }
+  }
 
   return $registry;
 }
@@ -230,6 +240,7 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
     if ($entity->link) {
       $vars['title'] = l($vars['title'], $entity->path);
     }
+    $vars['tag'] = $entity->settings['display']['title_tag'];
   }
 
   // Plugin Callback: 'template preprocess'
@@ -299,6 +310,13 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
     '#type' => 'checkbox',
     '#title' => t('Show title'),
     '#default_value' => kpane_settings_global_default_value($entity, array('display', 'title'), TRUE),
+  );
+  kore_include('heading');
+  $form['settings']['display']['title_tag'] = array(
+    '#type' => 'select',
+    '#title' => t('Title tag'),
+    '#options' => kore_heading_tag_options(),
+    '#default_value' => kpane_settings_global_default_value($entity, array('display', 'title_tag'), 'h2'),
   );
 
   // --- Plugin Settings --- //

@@ -16,11 +16,11 @@ Plugin: Kpane
     - Helper: _kpane_plugin_theme_registry().
 * template preprocess (Optional)
     - Callback: MODULE_PLUGIN-TYPE_PLUGIN_template_preprocess().
-    - Actual hook by other add-on: MODULE_preprocess_fieldable_panels_pane__PLUGIN().
+    - Actual hook by other add-on: MODULE_preprocess_fieldable_panels_pane__PLUGIN(&$vars, $context).
 * template process (Optional)
     - Callback: MODULE_PLUGIN-TYPE_PLUGIN_template_process().
 * settings form (Optional)
-    - Callback: MODULE_PLUGIN-TYPE_PLUGIN_settings_form($form_orig, &$form_state).
+    - Callback: MODULE_PLUGIN-TYPE_PLUGIN_settings_form($form_orig, &$form_state, $context).
 * reset (Optional)
     - As initiate and reset.
 
