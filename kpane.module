@@ -36,9 +36,6 @@ function kpane_ctools_plugin_directory($owner, $plugin_type) {
   if (in_array($owner, array('kore', 'kpane'))) {
     return 'plugins/' . $plugin_type;
   }
-  if ($owner == 'panels') {
-    return 'panels/' . $plugin_type;
-  }
 }
 
 /**
