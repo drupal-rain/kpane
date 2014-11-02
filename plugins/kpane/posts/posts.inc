@@ -5,6 +5,17 @@ $plugin = array(
   'classes' => array(
     'posts-hover-highlight' => '.posts-hover-highlight',
   ),
+  'display' => array(
+    'media' => array(
+      'label' => t('Media'),
+    ),
+    'thumbnail' => array(
+      'label' => t('Thumbnail'),
+    ),
+    'carousel' => array(
+      'label' => t('Carousel'),
+    ),
+  ),
 );
 
 function kpane_kpane_posts_bundle_info() {

@@ -42,9 +42,20 @@ function kpane_ctools_plugin_directory($owner, $plugin_type) {
  * Wrapper for ctools_get_plugins() to get kpane plugins.
  */
 function kpane_plugin_get_plugins($id = NULL) {
-  ctools_include('plugins');
-  $plugins = ctools_get_plugins('kpane', 'kpane', $id);
+  $plugins = &drupal_static(__FUNCTION__, array());
 
+  if (empty($plugins)) {
+    ctools_include('plugins');
+    $plugins = ctools_get_plugins('kpane', 'kpane');
+    foreach ($plugins as $plugin_id => $info) {
+      $hook = 'kpane_' . $plugin_id . '_info';
+      drupal_alter($hook, $plugins[$plugin_id]);
+    }
+  }
+
+  if (isset($id)) {
+    return $plugins[$id];
+  }
   return $plugins;
 }
 
@@ -64,6 +75,46 @@ function kpane_plugin_get_function($id, $callback) {
   }
 
   return $function;
+}
+
+function kpane_plugin_theme_display_options($plugin) {
+  $displays = array();
+  if (isset($plugin['display'])) {
+    foreach($plugin['display'] as $name => $display) {
+      $displays[$name] = $display['label'];
+    }
+  }
+
+  return array(
+    'none' => t('-- None --'),
+  ) + $displays;
+}
+
+function kpane_plugin_theme_style_options($plugin, $display = '') {
+  $styles = array();
+  if (!empty($display)) {
+    if (isset($plugin['display'][$display]['style'])) {
+      foreach ($plugin['display'][$display]['style'] as $name => $style) {
+        $styles[$name] = $style['label'];
+      }
+    }
+  }
+
+  return array(
+    'none' => t('-- None --'),
+  ) + $styles;
+}
+
+/**
+ * Ajax callback for settings[theme][display], to replace the style options.
+ */
+function kpane_plugin_settings_theme_display_ajax($form, $form_state) {
+  $entity = $form_state['entity'];
+  $plugin = kpane_plugin_get_plugins($entity->bundle);
+  $form['settings']['theme']['style']['#options'] = kpane_plugin_theme_style_options($plugin, $form_state['values']['settings']['theme']['display']);
+  $form['settings']['theme']['style']['#default_value'] = 'none';
+
+  return $form['settings']['theme']['style'];
 }
 
 /**
@@ -108,6 +159,8 @@ function _kpane_plugin_bundle_info($id) {
 function _kpane_plugin_theme_registry($id) {
   $plugin = kpane_plugin_get_plugins($id);
   $registry = array();
+  // @deprecating
+  /*
   $registry['fieldable_panels_pane__' . $id] = array (
     'base hook' => 'fieldable_panels_pane',
     'render element' => 'elements',
@@ -122,6 +175,45 @@ function _kpane_plugin_theme_registry($id) {
         'path' => $plugin['path'],
         'template' => $id . '_' . $subtype,
       );
+    }
+  }
+  */
+
+  // New style
+  $registry_id = 'kpane_' . $id;
+  $registry[$registry_id] = array(
+    //'base hook' => 'fieldable_panels_pane',
+    //'pattern' => $registry_id . '__',
+    'render element' => 'elements',
+    'path' => $plugin['path'],
+    'template' => $id,
+  );
+  // Display, Style
+  // @todo I could allow additional settings like 'path'(within display, style) to give convenient to module when alter the plugin info.
+  if (isset($plugin['display'])) {
+    foreach ($plugin['display'] as $display_name => $display) {
+      $template = $id . '_' . $display_name;
+      $registry_id = 'kpane_' . $template;
+      $registry[$registry_id] = array(
+        //'base hook' => 'fieldable_panels_pane',
+        //'pattern' => $registry_id . '__',
+        'render element' => 'elements',
+        'path' => $plugin['path'],
+        'template' => $template,
+      );
+      if (isset($plugin['display'][$display_name]['style'])) {
+        foreach ($plugin['display'][$display_name]['style'] as $style_name => $style) {
+          $template = $id . '_' . $display_name . '_' . $style_name;
+          $registry_id = 'kpane_' . $template;
+          $registry[$registry_id] = array(
+            //'base hook' => 'fieldable_panels_pane',
+            //'pattern' => $registry_id . '__',
+            'render element' => 'elements',
+            'path' => $plugin['path'],
+            'template' => $template,
+          );
+        }
+      }
     }
   }
 
@@ -172,6 +264,8 @@ function kpane_entity_info_alter(&$entity_info) {
  * Implements hook_theme().
  */
 function kpane_theme($existing, $type, $theme, $path) {
+  // While 'panels_pane' wrap 'fieldable_panels_pane', we provide an override one.
+  // @forget if fieldable_panels_panes add it???
   $registry['panels_pane__fieldable_panels_pane'] = array (
     'base hook' => 'panels_pane',
     'variables' => array('output' => array(), 'pane' => array(), 'display' => array()),
@@ -214,6 +308,25 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
   //dsm($vars);
   $entity = $vars['elements']['#fieldable_panels_pane'];
   $settings = $entity->settings;
+
+  // Delegate to kpane system
+  $template = 'kpane_' . $entity->bundle;
+  $vars['theme_hook_suggestions'][] = $template;
+
+  // Theme
+  if ($settings['theme']['display'] != 'none') {
+    $template .= '_' . $settings['theme']['display'];
+    $vars['theme_hook_suggestions'][] = $template;
+    if ($settings['theme']['style'] != 'none') {
+      $template .= '_' . $settings['theme']['style'];
+      $vars['theme_hook_suggestions'][] = $template;
+    }
+  }
+  if (!empty($settings['theme']['identity'])) {
+    $template .= '__' . $settings['theme']['identity'];
+    $vars['theme_hook_suggestions'][] = $template;
+  }
+
   // CSS Classes
   // Settings: Use entity CSS class.
   if (!$settings['css']['entity_class']) {
@@ -227,13 +340,13 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
   if ($settings['css']['bundle_class']) {
     $vars['classes_array'][] = $entity->bundle;
   }
-  // Settings: Add CSS classes.
+  // Settings: Add custom CSS classes, in format: "abc def hello"
   if (!empty($settings['css']['classes'])) {
     $vars['classes_array'][] = check_plain($settings['css']['classes']);
   }
   // Predefined classes
   if (isset($settings['css']['classes_predefined']) && $settings['css']['classes_predefined']['used']) {
-    $vars['classes_array'][] = implode(' ', $settings['css']['classes_predefined']['used']);
+    $vars['classes_array'][] = implode(' ', array_filter($settings['css']['classes_predefined']['used']));
   }
   // Style
   if (!empty($settings['css']['style'])) {
@@ -254,6 +367,9 @@ function kpane_preprocess_fieldable_panels_pane(&$vars) {
   if ($callback) {
     $callback($vars, $entity);
   }
+  // For other modules to extend
+  $hook = 'kpane_' . $entity->bundle . 'template_preprocess';
+  drupal_alter($hook, $vars, $entity);
 
   // Plugin Attach
   // Simple attach files, for complex attach, use 'template preprocess' to achieve
@@ -272,6 +388,9 @@ function kpane_process_fieldable_panels_pane(&$vars) {
   if ($callback) {
     $callback($vars, $entity);
   }
+  // For other modules to extend
+  $hook = 'kpane_' . $entity->bundle . 'template_process';
+  drupal_alter($hook, $vars, $entity);
 }
 
 /**
@@ -279,10 +398,45 @@ function kpane_process_fieldable_panels_pane(&$vars) {
  */
 function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_state) {
   $entity = $form_state['entity'];
+  $plugin = kpane_plugin_get_plugins($entity->bundle);
+
   // No revision by default.
   $form['revision']['revision']['#default_value'] = FALSE;
 
   // --- Global Settings --- //
+
+  // Theme
+  // @todo Ajax show the theme_hook_suggestion template name for this kpane.
+  $form['settings']['theme'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Theme'),
+    '#collapsible' => TRUE,
+  );
+  $form['settings']['theme']['display'] = array(
+    '#type' => 'select',
+    '#title' => t('Display'),
+    '#options' => kpane_plugin_theme_display_options($plugin),
+    '#default_value' => kpane_settings_global_default_value($entity, array('theme', 'display'), 'none'),
+    '#ajax' => array(
+      'callback' => 'kpane_plugin_settings_theme_display_ajax',
+      'wrapper' => 'settings_theme_display_style',
+    ),
+  );
+  // For ajax, while the ajax callback just pass in variables value, the state should set it correctly here for validation.
+  $display = isset($form_state['values']['settings']['theme']['display']) ? $form_state['values']['settings']['theme']['display'] : kpane_settings_global_default_value($entity, array('theme', 'display'), 'none');
+  $form['settings']['theme']['style'] = array(
+    '#type' => 'select',
+    '#title' => t('Style'),
+    '#options' => kpane_plugin_theme_style_options($plugin, $display),
+    '#default_value' => kpane_settings_global_default_value($entity, array('theme', 'style'), 'none'),
+    '#prefix' => '<div id="settings_theme_display_style">',
+    '#suffix' => '</div>',
+  );
+  $form['settings']['theme']['identity'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Identity'),
+    '#default_value' => kpane_settings_global_default_value($entity, array('theme', 'identity'), ''),
+  );
 
   // CSS
   $form['settings']['css'] = array(
@@ -306,7 +460,6 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
     '#title' => t('Add CSS classes'),
     '#default_value' => kpane_settings_global_default_value($entity, array('css', 'classes'), ''),
   );
-  $plugin = kpane_plugin_get_plugins($entity->bundle);
   if ($plugin['classes']) {
     $form['settings']['css']['classes_predefined'] = array(
       '#type'        => 'fieldset',
@@ -359,6 +512,7 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   }
 
   // Provide hook for others to alter this form.
+  drupal_alter('kpane_' . $id . 'settings_form', $form, $form_state);
   drupal_alter('kpane_settings_form', $form, $form_state);
 }
 
