@@ -198,7 +198,7 @@ function _kpane_plugin_theme_registry($id) {
         //'base hook' => 'fieldable_panels_pane',
         //'pattern' => $registry_id . '__',
         'render element' => 'elements',
-        'path' => $plugin['path'],
+        'path' => isset($plugin['display'][$display_name]['path']) ? $plugin['display'][$display_name]['path'] : $plugin['path'],
         'template' => $template,
       );
       if (isset($plugin['display'][$display_name]['style'])) {
@@ -209,7 +209,7 @@ function _kpane_plugin_theme_registry($id) {
             //'base hook' => 'fieldable_panels_pane',
             //'pattern' => $registry_id . '__',
             'render element' => 'elements',
-            'path' => $plugin['path'],
+            'path' => isset($plugin['display'][$display_name]['style'][$style_name]['path']) ? $plugin['display'][$display_name]['style'][$style_name]['path'] : $plugin['path'],
             'template' => $template,
           );
         }
