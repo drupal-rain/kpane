@@ -410,9 +410,12 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   $form['revision']['revision']['#default_value'] = FALSE;
 
   // --- Global Settings --- //
+  $form['kpane'] = array(
+    '#type' => 'hidden',
+    '#value' => $plugin['name'],
+  );
 
   // Theme
-  // @todo Ajax show the theme_hook_suggestion template name for this kpane.
   $form['settings']['theme'] = array(
     '#type' => 'fieldset',
     '#title' => t('Theme'),
@@ -430,21 +433,45 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   );
   // For ajax, while the ajax callback just pass in variables value, the state should set it correctly here for validation.
   $display = isset($form_state['values']['settings']['theme']['display']) ? $form_state['values']['settings']['theme']['display'] : kpane_settings_global_default_value($entity, array('theme', 'display'), 'none');
+  $style = kpane_settings_global_default_value($entity, array('theme', 'style'), 'none');
   $form['settings']['theme']['style'] = array(
     '#type' => 'select',
     '#title' => t('Style'),
     '#options' => kpane_plugin_theme_style_options($plugin, $display),
-    '#default_value' => kpane_settings_global_default_value($entity, array('theme', 'style'), 'none'),
+    '#default_value' => $style,
     '#prefix' => '<div id="settings_theme_display_style">',
     '#suffix' => '</div>',
   );
+  $identity = kpane_settings_global_default_value($entity, array('theme', 'identity'), '');
   $form['settings']['theme']['identity'] = array(
     '#type' => 'textfield',
     '#title' => t('Identity'),
-    '#default_value' => kpane_settings_global_default_value($entity, array('theme', 'identity'), ''),
+    '#default_value' => $identity,
+  );
+  // Ajax show the theme_hook_suggestion template name for this kpane.
+  // @todo Create a helper for this.
+  $template = $plugin['name'];
+  if ($display != 'none') {
+    $template .= '-' . $display;
+    if ($style != 'none') {
+      $template .= '-' . $style;
+    }
+  }
+  if (!empty($identity)) {
+    $template .= '--' . $identity;
+  }
+  $form['settings']['theme']['theme_hook_suggestion'] = array(
+    '#type' => 'item',
+    '#title' => t('Template'),
+    '#markup' => '<div id="kpane-theme-hook-suggestion">' . $template . '.tpl.php' . '</div>',
+    '#attached' => array(
+      'js' => array(
+        drupal_get_path('module', 'kpane') . '/js/kpane.js',
+      ),
+    )
   );
 
-  // CSS
+    // CSS
   $form['settings']['css'] = array(
     '#type' => 'fieldset',
     '#title' => t('CSS'),
