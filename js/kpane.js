@@ -5,7 +5,7 @@
     var display = $(":input[name='settings[theme][display]']").val();
     var style = $(":input[name='settings[theme][style]']").val();
     var identity = $(":input[name='settings[theme][identity]']").val();
-    var template = kpane;
+    var template = 'kpane-' + kpane;
     if (display != 'none') {
       template += '-' + display;
       if (style != 'none') {

@@ -450,7 +450,7 @@ function kpane_fieldable_panels_panes_entity_settings_form_alter(&$form, &$form_
   );
   // Ajax show the theme_hook_suggestion template name for this kpane.
   // @todo Create a helper for this.
-  $template = $plugin['name'];
+  $template = 'kpane-' . $plugin['name'];
   if ($display != 'none') {
     $template .= '-' . $display;
     if ($style != 'none') {
