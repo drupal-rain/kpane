@@ -2,5 +2,5 @@
   <?php if (!empty($title)): ?>
     <?php print "<$tag>$title</$tag>"; ?>
   <?php endif; ?>
-  <?php print render($content); ?>
+  <?php print render($posts); ?>
 </div>

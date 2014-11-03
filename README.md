@@ -53,3 +53,12 @@ Kpane Template
 * kpane_KPANE_DISPLAY
 * kpane_KPANE_DISPLAY_STYLE
 * kpane_KPANE[_DISPLAY][_STYLE]__IDENTITY (So theme can easily override a single pane.)
+
+
+Current Development Strategy for Kpane
+======================================
+* Develop and use in experiment.
+* Update the db if necessary.
+* Create a new 'display' or even 'kpane' when needed.
+
+

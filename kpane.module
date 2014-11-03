@@ -156,28 +156,9 @@ function _kpane_plugin_bundle_info($id) {
 /**
  * Helper function for plugin.
  */
-function _kpane_plugin_theme_registry($id) {
+function _kpane_plugin_theme_registry($id, $theme_display = TRUE, $theme_style = TRUE) {
   $plugin = kpane_plugin_get_plugins($id);
   $registry = array();
-  // @deprecating
-  /*
-  $registry['fieldable_panels_pane__' . $id] = array (
-    'base hook' => 'fieldable_panels_pane',
-    'render element' => 'elements',
-    'path' => $plugin['path'],
-    'template' => $id,
-  );
-  if (!empty($plugin['subtypes'])) {
-    foreach ($plugin['subtypes'] as $subtype => $subtype_info) {
-      $registry['fieldable_panels_pane__' . $id . '_' . $subtype] = array (
-        'base hook' => 'fieldable_panels_pane',
-        'render element' => 'elements',
-        'path' => $plugin['path'],
-        'template' => $id . '_' . $subtype,
-      );
-    }
-  }
-  */
 
   // New style
   $registry_id = 'kpane_' . $id;
@@ -190,7 +171,7 @@ function _kpane_plugin_theme_registry($id) {
   );
   // Display, Style
   // @todo I could allow additional settings like 'path'(within display, style) to give convenient to module when alter the plugin info.
-  if (isset($plugin['display'])) {
+  if ($theme_display && isset($plugin['display'])) {
     foreach ($plugin['display'] as $display_name => $display) {
       $template = $id . '_' . $display_name;
       $registry_id = 'kpane_' . $template;
@@ -199,9 +180,9 @@ function _kpane_plugin_theme_registry($id) {
         //'pattern' => $registry_id . '__',
         'render element' => 'elements',
         'path' => isset($plugin['display'][$display_name]['path']) ? $plugin['display'][$display_name]['path'] : $plugin['path'],
-        'template' => $template,
+        'template' => str_replace('_', '-', $template),
       );
-      if (isset($plugin['display'][$display_name]['style'])) {
+      if ($theme_style && isset($plugin['display'][$display_name]['style'])) {
         foreach ($plugin['display'][$display_name]['style'] as $style_name => $style) {
           $template = $id . '_' . $display_name . '_' . $style_name;
           $registry_id = 'kpane_' . $template;
@@ -210,7 +191,7 @@ function _kpane_plugin_theme_registry($id) {
             //'pattern' => $registry_id . '__',
             'render element' => 'elements',
             'path' => isset($plugin['display'][$display_name]['style'][$style_name]['path']) ? $plugin['display'][$display_name]['style'][$style_name]['path'] : $plugin['path'],
-            'template' => $template,
+            'template' => str_replace('_', '-', $template),
           );
         }
       }
@@ -218,6 +199,31 @@ function _kpane_plugin_theme_registry($id) {
   }
 
   return $registry;
+}
+
+/**
+ * Settings form helper for kpane plugin.
+ */
+function _kpane_plugin_settings_form(&$form, &$form_state, $context) {
+  $id = $context->bundle;
+  $plugin = kpane_plugin_get_plugins($id);
+  foreach ($plugin['display'] as $display_name => $display) {
+    $form[$display_name] = array(
+      '#type' => 'fieldset',
+      '#title' => $display['label'],
+      '#collapsible' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="settings[theme][display]"]' => array('value' => $display_name),
+        ),
+      ),
+    );
+
+    $function = "kpane_kpane_{$id}_settings_form_" . $display_name;
+    if (function_exists($function)) {
+      $function($form, $form_state, $context);
+    }
+  }
 }
 
 // =============================================================================
