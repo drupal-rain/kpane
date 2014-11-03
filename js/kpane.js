@@ -23,7 +23,7 @@
       // @issue Run 4 times after changed????
       $(":input[name='settings[theme][display]']").change(function () {Drupal.kpaneSettingsFormUpdateTemplate();});
       $(":input[name='settings[theme][style]']").change(function () {Drupal.kpaneSettingsFormUpdateTemplate();});
-      $(":input[name='settings[theme][identity]']").change(function () {Drupal.kpaneSettingsFormUpdateTemplate();});
+      $(":input[name='settings[theme][identity]']").keyup(function () {Drupal.kpaneSettingsFormUpdateTemplate();});
     }
   }
 
